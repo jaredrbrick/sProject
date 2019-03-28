@@ -62,33 +62,6 @@ public class ProjectCRUD2 {
             return null;
        }
 	}
-	
-	/* Safe? command execution, closing all resources
-	 * @param sql - a string containing the SQL statement to be executed
-	 * @param message - a string to be printed after the statement is executed but before results are printed
-	 * @param printRecord - boolean indicating if the result set is to be printed
-	 */
-	public static void execCommand(String sql, String message, boolean printRecord) {
-		try {
-			Connection con = makeConnection();
-			Statement st = con.createStatement();
-			ResultSet rs = st.executeQuery(sql);
-			
-			System.out.println(message);
-			
-			if(printRecord) {
-			  while(rs.next()) 
-				  System.out.println(rs.getString("project_id")+ "            "+ rs.getString(2) + "      " + rs.getDouble(3));
-			} 			
-			
-            rs.close();
-			st.close();
-	    	con.close();
-		} catch (Exception ex) {
-            System.out.println(ex);
-		}
-		
-	}
 		
 	/* Insert a single row
 	 * @param projectID - value for project_id column
@@ -96,9 +69,9 @@ public class ProjectCRUD2 {
 	 * @param resources - value for resources column
 	 */
 	public static void insertRow(String projectID, String projectName, int resources) {  //create
-		try {
-			Connection con = makeConnection(); 
+		try (Connection con = makeConnection(); 
 			CallableStatement cs = con.prepareCall("{call sp_addProject(?,?,?)}");
+			){
 			
 			cs.setString(1, projectID);
 			cs.setString(2, projectName);
@@ -123,9 +96,9 @@ public class ProjectCRUD2 {
 	
 	//TODO make funcation not SP	
 	public static void getName(String projectID) {  //read
-		try {
-			Connection con = makeConnection(); 
+		try (Connection con = makeConnection(); 
 			CallableStatement cs = con.prepareCall("{call sp_getProjectName(?, ?)}");
+			){
 			
 			cs.setString(1, projectID);
 			cs.registerOutParameter(2, java.sql.Types.VARCHAR);
@@ -133,9 +106,6 @@ public class ProjectCRUD2 {
 			cs.execute();
 			System.out.println("project ID " + projectID + " has name " + cs.getString(2));
 			
-			cs.close();
-			con.close();
-		
 		} catch(Exception e) {System.out.println(e);}
 	}
 	
@@ -143,9 +113,9 @@ public class ProjectCRUD2 {
 	 * @param projectID - the target project_id
 	 */
 	public static void getRow(String projectID) {  //read
-		try {
-			Connection con = makeConnection(); 
+		try (Connection con = makeConnection(); 
 			CallableStatement cs = con.prepareCall("{call sp_getProject(?, ?, ?)}");
+			){
 			
 			cs.setString(1, projectID);
 			cs.registerOutParameter(2, java.sql.Types.VARCHAR);
@@ -153,9 +123,6 @@ public class ProjectCRUD2 {
 			
 			cs.execute();
 			System.out.println("project ID " + projectID + " has name " + cs.getString(2) + " and resources " + cs.getInt(3));
-			
-			cs.close();
-			con.close();
 		
 		} catch(Exception e) {System.out.println(e);}
 	}
@@ -186,7 +153,7 @@ public class ProjectCRUD2 {
 		//String message = "Project ID    Project Name     Resources\n________________________________________________";
 	}
 	
-	//TODO - get specific rows? Using WHERE?
+	//TODO - get specific rows? Using WHERE? How do I do that safely lol.
 	
 	/* Update single row
 	 * @param projectID - value for project_id column
@@ -194,17 +161,15 @@ public class ProjectCRUD2 {
 	 * @param resources - value for resources column
 	 */
 	public static void updateRow(String projectID, String projectName, int resources) { //update
-		try {
-			Connection con = makeConnection(); 
+		try (Connection con = makeConnection(); 
 			CallableStatement cs = con.prepareCall("{call sp_updateProject(?,?,?)}");
+			){
 			
 			cs.setString(1, projectID);
 			cs.setString(2, projectName);
 			cs.setInt(3, resources);
-			
+		
 			cs.execute();
-			cs.close();
-			con.close();
 			
 			System.out.println("Record for project " + projectID + " updated.");
 		} catch(Exception e) {System.out.println(e);}
@@ -223,15 +188,12 @@ public class ProjectCRUD2 {
 	 * @param projectID - the target project_id
 	 */
 	public static void deleteRow(String projectID) { //delete
-		try {
-			Connection con = makeConnection(); 
-			CallableStatement cs = con.prepareCall("{call sp_deleteProject(?)}");
-			
-			cs.setString(1, projectID);
-			
+		try (Connection con = makeConnection(); 
+			 CallableStatement cs = con.prepareCall("{call sp_deleteProject(?)}");
+			){	
+		
+			cs.setString(1, projectID);			
 			cs.execute();
-			cs.close();
-			con.close();
 			
 			System.out.println("Record for project " + projectID + " deleted.");
 		} catch(Exception e) {System.out.println(e);}
@@ -250,16 +212,13 @@ public class ProjectCRUD2 {
 	 * Deletes all rows in the table
 	 */
 	public static void deleteAllRows() {
-		try {
-			Connection con = makeConnection();
-			Statement st = con.createStatement();
+		try (Connection con = makeConnection(); 
+			 Statement st = con.createStatement();
+			){			
+
 			ResultSet rs = st.executeQuery("TRUNCATE TABLE project");
-			
-			System.out.println("project table truncated");
-			
             rs.close();
-			st.close();
-	    	con.close();
+			System.out.println("project table truncated");
 		} catch (Exception ex) {
             System.out.println(ex);
 		}
